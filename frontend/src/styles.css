@@ -1,0 +1,221 @@
+:root {
+  --tw-primary: #135d66;
+  --tw-primary-dark: #0d3f45;
+  --tw-accent: #f4b942;
+  --tw-surface: #ffffff;
+  --tw-muted: #6b7280;
+  --tw-border: #e5e7eb;
+  --tw-bg-soft: #f7faf9;
+  --tw-text: #111827;
+  --tw-shadow: 0 20px 55px rgba(17, 24, 39, 0.18);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.tw-chatbot,
+.tw-chatbot * {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.tw-chatbot {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2147483000;
+  color: var(--tw-text);
+}
+
+.tw-chatbot__launcher {
+  width: 60px;
+  height: 60px;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--tw-primary);
+  box-shadow: var(--tw-shadow);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.tw-chatbot__launcher:hover {
+  background: var(--tw-primary-dark);
+  transform: translateY(-2px);
+}
+
+.tw-chatbot__launcher-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.tw-chatbot__panel {
+  width: min(360px, calc(100vw - 28px));
+  height: min(560px, calc(100vh - 36px));
+  background: var(--tw-surface);
+  border: 1px solid var(--tw-border);
+  border-radius: 8px;
+  box-shadow: var(--tw-shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tw-chatbot__header {
+  min-height: 74px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--tw-primary);
+  color: #fff;
+}
+
+.tw-chatbot__header h1,
+.tw-chatbot__eyebrow {
+  margin: 0;
+}
+
+.tw-chatbot__header h1 {
+  font-size: 17px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.tw-chatbot__eyebrow {
+  margin-bottom: 3px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+}
+
+.tw-chatbot__close {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tw-chatbot__messages {
+  flex: 1;
+  padding: 14px;
+  overflow-y: auto;
+  background: var(--tw-bg-soft);
+}
+
+.tw-chatbot__message {
+  max-width: 86%;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tw-chatbot__message--bot {
+  color: var(--tw-text);
+  background: #fff;
+  border: 1px solid var(--tw-border);
+}
+
+.tw-chatbot__message--user {
+  margin-left: auto;
+  color: #fff;
+  background: var(--tw-primary);
+}
+
+.tw-chatbot__message--status {
+  margin-right: auto;
+  margin-left: auto;
+  color: var(--tw-muted);
+  background: transparent;
+  border: 0;
+  text-align: center;
+  font-size: 12px;
+}
+
+.tw-chatbot__composer {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--tw-border);
+  background: #fff;
+}
+
+.tw-chatbot__input {
+  min-width: 0;
+  flex: 1;
+  height: 42px;
+  border: 1px solid var(--tw-border);
+  border-radius: 6px;
+  padding: 0 12px;
+  color: var(--tw-text);
+  font-size: 14px;
+  outline: none;
+}
+
+.tw-chatbot__input:focus {
+  border-color: var(--tw-primary);
+  box-shadow: 0 0 0 3px rgba(19, 93, 102, 0.14);
+}
+
+.tw-chatbot__send,
+.tw-chatbot__end {
+  border: 0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tw-chatbot__send {
+  min-width: 72px;
+  height: 42px;
+  color: #fff;
+  background: var(--tw-primary);
+}
+
+.tw-chatbot__send:disabled,
+.tw-chatbot__end:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.tw-chatbot__end {
+  margin: 0 12px 12px;
+  min-height: 38px;
+  color: var(--tw-primary-dark);
+  background: #f9f1d9;
+}
+
+@media (max-width: 420px) {
+  .tw-chatbot {
+    right: 14px;
+    bottom: 14px;
+  }
+
+  .tw-chatbot__panel {
+    width: calc(100vw - 28px);
+    height: calc(100vh - 28px);
+  }
+}

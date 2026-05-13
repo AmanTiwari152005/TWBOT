@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: tech-webbed-chatbot
+    env: python
+    rootDir: backend
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn chatbot_backend.wsgi:application"
