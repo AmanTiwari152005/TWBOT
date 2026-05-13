@@ -206,6 +206,7 @@ def build_pdf_transcript(lead, frontend_conversation=None):
     story.append(Paragraph('Tech Webbed Chat Transcript', styles['Title']))
     story.append(Spacer(1, 12))
     story.append(Paragraph(f'<b>Lead:</b> {lead.name}', styles['Normal']))
+    story.append(Paragraph(f'<b>Phone:</b> {lead.phone or "Not provided"}', styles['Normal']))
     story.append(Paragraph(f'<b>Business type:</b> {lead.business_type}', styles['Normal']))
     story.append(Paragraph(f'<b>Created at:</b> {timezone.localtime(lead.created_at):%Y-%m-%d %H:%M:%S}', styles['Normal']))
     story.append(Paragraph(f'<b>Generated at:</b> {timezone.localtime(timezone.now()):%Y-%m-%d %H:%M:%S}', styles['Normal']))
@@ -262,6 +263,7 @@ def send_chat_transcript_email(lead, frontend_conversation=None):
         'html': (
             '<p>A chatbot conversation has ended.</p>'
             f'<p><strong>Lead:</strong> {lead.name}<br />'
+            f'<strong>Phone:</strong> {lead.phone or "Not provided"}<br />'
             f'<strong>Business type:</strong> {lead.business_type}</p>'
             '<p>The full chat transcript is attached as a PDF.</p>'
         ),
@@ -289,6 +291,7 @@ def build_messages(lead, user_message):
             'role': 'system',
             'content': (
                 f'Current lead name: {lead.name}\n'
+                f'Current lead phone: {lead.phone or "Not provided"}\n'
                 f'Current business type: {lead.business_type}\n'
                 'Use this context only if it is relevant.'
             ),

@@ -3,11 +3,12 @@ from django.db import models
 
 class UserLead(models.Model):
     name = models.CharField(max_length=120)
+    phone = models.CharField(max_length=40, blank=True)
     business_type = models.CharField(max_length=160)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'{self.name} - {self.business_type}'
+        return f'{self.name} - {self.phone or self.business_type}'
 
 
 class ChatMessage(models.Model):

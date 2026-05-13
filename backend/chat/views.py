@@ -52,11 +52,32 @@ class ChatAPIView(APIView):
         lead_id = data.get('lead_id')
         if lead_id:
             try:
-                return UserLead.objects.get(id=lead_id)
+                lead = UserLead.objects.get(id=lead_id)
+                update_fields = []
+
+                name = data.get('name', '').strip()
+                phone = data.get('phone', '').strip()
+                business_type = data.get('business_type', '').strip()
+
+                if name and lead.name == 'Website Visitor':
+                    lead.name = name
+                    update_fields.append('name')
+                if phone and not lead.phone:
+                    lead.phone = phone
+                    update_fields.append('phone')
+                if business_type and lead.business_type == 'Not specified':
+                    lead.business_type = business_type
+                    update_fields.append('business_type')
+
+                if update_fields:
+                    lead.save(update_fields=update_fields)
+
+                return lead
             except UserLead.DoesNotExist:
                 pass
 
         return UserLead.objects.create(
             name=data.get('name', '').strip() or 'Website Visitor',
+            phone=data.get('phone', '').strip(),
             business_type=data.get('business_type', '').strip() or 'Not specified',
         )

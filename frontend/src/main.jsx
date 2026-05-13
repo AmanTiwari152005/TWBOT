@@ -5,10 +5,49 @@ import './styles.css';
 const API_URL = import.meta.env.VITE_API_URL;
 console.log("API URL:", import.meta.env.VITE_API_URL);
 
+function createMessage(role, text) {
+  return {
+    id: crypto.randomUUID(),
+    role,
+    text,
+  };
+}
+
+function extractName(value) {
+  const cleaned = value
+    .trim()
+    .replace(/^(hi|hello|hey)[,\s]+/i, '')
+    .replace(/^(my name is|name is|i am|i'm|this is)\s+/i, '')
+    .replace(/\b(and|my|phone|number|contact|mobile).*/i, '')
+    .replace(/[^a-zA-Z .'-]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const letterCount = (cleaned.match(/[a-zA-Z]/g) || []).length;
+
+  if (letterCount < 2 || cleaned.length > 80) {
+    return '';
+  }
+
+  return cleaned;
+}
+
+function normalizePhoneNumber(value) {
+  const trimmed = value.trim();
+  const digits = trimmed.replace(/\D/g, '');
+
+  if (digits.length < 10 || digits.length > 15) {
+    return '';
+  }
+
+  return trimmed.startsWith('+') ? `+${digits}` : digits;
+}
+
 function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
   const [leadId, setLeadId] = useState(null);
+  const [leadDetails, setLeadDetails] = useState({ name: '', phone: '' });
+  const [onboardingStep, setOnboardingStep] = useState('name');
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState([]);
   const [isSending, setIsSending] = useState(false);
@@ -27,11 +66,8 @@ function ChatbotWidget() {
     if (!hasOpened) {
       setHasOpened(true);
       setMessages([
-        {
-          id: crypto.randomUUID(),
-          role: 'bot',
-          text: 'Hi, I am Tech Webbed bot. How can I help you?, Before we proceed, Can i know your name and contact?',
-        },
+        createMessage('bot', 'Hi, I am Tech Webbed bot.'),
+        createMessage('bot', 'May I know your name?'),
       ]);
     }
   }
@@ -85,6 +121,35 @@ function ChatbotWidget() {
 
     addMessage('user', text);
     setInputValue('');
+
+    if (onboardingStep === 'name') {
+      const name = extractName(text);
+
+      if (!name) {
+        addMessage('bot', 'Please share your name to continue.');
+        return;
+      }
+
+      setLeadDetails((currentDetails) => ({ ...currentDetails, name }));
+      setOnboardingStep('phone');
+      addMessage('bot', `Thanks, ${name}. Please share your phone number.`);
+      return;
+    }
+
+    if (onboardingStep === 'phone') {
+      const phone = normalizePhoneNumber(text);
+
+      if (!phone) {
+        addMessage('bot', 'Please enter a valid phone number so our team can contact you.');
+        return;
+      }
+
+      setLeadDetails((currentDetails) => ({ ...currentDetails, phone }));
+      setOnboardingStep('ready');
+      addMessage('bot', 'Thanks. How can I help you today?');
+      return;
+    }
+
     setIsSending(true);
 
     const statusId = crypto.randomUUID();
@@ -101,6 +166,8 @@ function ChatbotWidget() {
       activeRequestRef.current = postChat({
         action: 'message',
         lead_id: leadId,
+        name: leadDetails.name,
+        phone: leadDetails.phone,
         message: text,
       });
 
@@ -168,6 +235,8 @@ function ChatbotWidget() {
       const data = await postChat({
         action: 'end_chat',
         lead_id: leadId,
+        name: leadDetails.name,
+        phone: leadDetails.phone,
         conversation: messages,
       });
 
