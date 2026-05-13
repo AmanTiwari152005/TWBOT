@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const API_URL = import.meta.env.VITE_API_URL;
+console.log("API URL:", import.meta.env.VITE_API_URL);
 
 function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -51,7 +52,7 @@ function ChatbotWidget() {
     const requestId = requestCounterRef.current;
     console.log('[Tech Webbed Chat] fetch starts', requestId, payload);
 
-    const response = await fetch(`${API_BASE_URL}/chat/`, {
+    const response = await fetch(`${API_URL}/chat/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
