@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './styles.css';
 
 const API_URL = import.meta.env.VITE_API_URL;
+const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
 console.log("API URL:", import.meta.env.VITE_API_URL);
 
 function createMessage(role, text) {
@@ -82,11 +83,48 @@ function ChatbotWidget() {
   const [isEnded, setIsEnded] = useState(false);
   const requestCounterRef = useRef(0);
   const activeRequestRef = useRef(null);
+  const inactivityTimerRef = useRef(null);
+  const endChatInProgressRef = useRef(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages]);
+
+  useEffect(() => {
+    clearInactivityTimer();
+
+    const lastMessage = messages[messages.length - 1];
+    const canAutoEnd =
+      isOpen &&
+      !isSending &&
+      !isEnded &&
+      onboardingStep === 'ready' &&
+      leadDetails.name &&
+      leadDetails.phone &&
+      lastMessage?.role === 'bot';
+
+    if (!canAutoEnd) {
+      return undefined;
+    }
+
+    console.log('[Tech Webbed Chat] inactivity timer started');
+    inactivityTimerRef.current = window.setTimeout(() => {
+      console.log('[Tech Webbed Chat] inactivity timer expired');
+      endChat({ automatic: true });
+    }, INACTIVITY_TIMEOUT_MS);
+
+    return clearInactivityTimer;
+  }, [messages, isOpen, isSending, isEnded, onboardingStep, leadDetails.name, leadDetails.phone]);
+
+  useEffect(() => clearInactivityTimer, []);
+
+  function clearInactivityTimer() {
+    if (inactivityTimerRef.current) {
+      window.clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+  }
 
   function openChat() {
     setIsOpen(true);
@@ -146,6 +184,7 @@ function ChatbotWidget() {
       return;
     }
 
+    clearInactivityTimer();
     addMessage('user', text);
     setInputValue('');
 
@@ -248,11 +287,13 @@ function ChatbotWidget() {
     sendMessage();
   }
 
-  async function endChat() {
-    if (isSending || isEnded) {
+  async function endChat({ automatic = false } = {}) {
+    if (isSending || isEnded || endChatInProgressRef.current) {
       return;
     }
 
+    clearInactivityTimer();
+    endChatInProgressRef.current = true;
     setIsSending(true);
     const statusId = crypto.randomUUID();
     setMessages((currentMessages) => [
@@ -260,7 +301,7 @@ function ChatbotWidget() {
       {
         id: statusId,
         role: 'status',
-        text: 'Ending chat...',
+        text: automatic ? 'Ending inactive chat...' : 'Ending chat...',
       },
     ]);
 
@@ -294,6 +335,7 @@ function ChatbotWidget() {
           })
       );
     } finally {
+      endChatInProgressRef.current = false;
       setIsSending(false);
     }
   }
