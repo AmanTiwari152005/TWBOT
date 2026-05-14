@@ -18,13 +18,41 @@ function extractName(value) {
     .trim()
     .replace(/^(hi|hello|hey)[,\s]+/i, '')
     .replace(/^(my name is|name is|i am|i'm|this is)\s+/i, '')
-    .replace(/\b(and|my|phone|number|contact|mobile).*/i, '')
-    .replace(/[^a-zA-Z .'-]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
+  const blockedWords = [
+    'website',
+    'marketing',
+    'service',
+    'price',
+    'pricing',
+    'package',
+    'logo',
+    'video',
+    'automation',
+    'help',
+    'need',
+    'want',
+    'phone',
+    'number',
+    'contact',
+    'mobile',
+    'whatsapp',
+  ];
+  const words = cleaned.split(' ').filter(Boolean);
   const letterCount = (cleaned.match(/[a-zA-Z]/g) || []).length;
+  const hasBlockedWord = blockedWords.some((word) => new RegExp(`\\b${word}\\b`, 'i').test(cleaned));
+  const hasOnlyNameCharacters = /^[a-zA-Z .'-]+$/.test(cleaned);
+  const hasValidNameWords = words.every((word) => /^[a-zA-Z][a-zA-Z.'-]*$/.test(word));
 
-  if (letterCount < 2 || cleaned.length > 80) {
+  if (
+    letterCount < 2 ||
+    cleaned.length > 80 ||
+    words.length > 4 ||
+    hasBlockedWord ||
+    !hasOnlyNameCharacters ||
+    !hasValidNameWords
+  ) {
     return '';
   }
 
@@ -35,7 +63,7 @@ function normalizePhoneNumber(value) {
   const trimmed = value.trim();
   const digits = trimmed.replace(/\D/g, '');
 
-  if (digits.length < 10 || digits.length > 15) {
+  if (!/^\+?[\d\s().-]+$/.test(trimmed) || digits.length < 10 || digits.length > 15) {
     return '';
   }
 
@@ -47,7 +75,7 @@ function ChatbotWidget() {
   const [hasOpened, setHasOpened] = useState(false);
   const [leadId, setLeadId] = useState(null);
   const [leadDetails, setLeadDetails] = useState({ name: '', phone: '' });
-  const [onboardingStep, setOnboardingStep] = useState('name');
+  const [onboardingStep, setOnboardingStep] = useState('greeting');
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState([]);
   const [isSending, setIsSending] = useState(false);
@@ -66,8 +94,7 @@ function ChatbotWidget() {
     if (!hasOpened) {
       setHasOpened(true);
       setMessages([
-        createMessage('bot', 'Hi, I am Tech Webbed bot.'),
-        createMessage('bot', 'May I know your name?'),
+        createMessage('bot', 'Hi I am Tech Webbed AI Assistance.'),
       ]);
     }
   }
@@ -122,17 +149,23 @@ function ChatbotWidget() {
     addMessage('user', text);
     setInputValue('');
 
+    if (onboardingStep === 'greeting') {
+      setOnboardingStep('name');
+      addMessage('bot', 'May I know your name?');
+      return;
+    }
+
     if (onboardingStep === 'name') {
       const name = extractName(text);
 
       if (!name) {
-        addMessage('bot', 'Please share your name to continue.');
+        addMessage('bot', 'Please enter your name only to continue.');
         return;
       }
 
       setLeadDetails((currentDetails) => ({ ...currentDetails, name }));
       setOnboardingStep('phone');
-      addMessage('bot', `Thanks, ${name}. Please share your phone number.`);
+      addMessage('bot', `Thanks, ${name}. May I know your WhatsApp number for better assistance?`);
       return;
     }
 
@@ -140,7 +173,7 @@ function ChatbotWidget() {
       const phone = normalizePhoneNumber(text);
 
       if (!phone) {
-        addMessage('bot', 'Please enter a valid phone number so our team can contact you.');
+        addMessage('bot', 'Please enter a valid WhatsApp number only to continue.');
         return;
       }
 
