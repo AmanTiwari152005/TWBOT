@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -5,6 +7,9 @@ from rest_framework.views import APIView
 from .models import ChatMessage, UserLead
 from .serializers import ChatRequestSerializer
 from .services import get_ai_response, send_chat_transcript_email
+
+
+logger = logging.getLogger(__name__)
 
 
 class ChatAPIView(APIView):
@@ -19,15 +24,27 @@ class ChatAPIView(APIView):
         lead = self.get_or_create_lead(data)
 
         if data.get('action') == 'end_chat':
+            lead_id = lead.id
+            data_deleted = False
+
             try:
                 email_sent = send_chat_transcript_email(lead, data.get('conversation', []))
-            except Exception:
+            except Exception as error:
+                logger.exception('Failed to send chat transcript for lead_id=%s: %s', lead_id, error)
                 email_sent = False
+
+            if email_sent:
+                try:
+                    lead.delete()
+                    data_deleted = True
+                except Exception as error:
+                    logger.exception('Failed to delete chat data after email for lead_id=%s: %s', lead_id, error)
 
             return Response(
                 {
-                    'lead_id': lead.id,
+                    'lead_id': lead_id,
                     'email_sent': email_sent,
+                    'data_deleted': data_deleted,
                     'response': 'Thank you. Our Tech Webbed team will connect with you shortly for detailed discussion.',
                 }
             )
