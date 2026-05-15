@@ -129,5 +129,5 @@ REST_FRAMEWORK = {
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-5-mini')
 RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
-RESEND_FROM_EMAIL = os.getenv('RESEND_FROM_EMAIL', 'Tech Webbed Chat <onboarding@resend.dev>')
+RESEND_FROM_EMAIL = os.getenv('RESEND_FROM_EMAIL', 'Tech Webbed <support@techwebbed.com>')
 LEAD_NOTIFICATION_EMAIL = os.getenv('LEAD_NOTIFICATION_EMAIL', '')

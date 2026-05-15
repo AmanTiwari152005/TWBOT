@@ -63,7 +63,7 @@ OPENAI_API_KEY=your_openai_key
 OPENAI_MODEL=gpt-5-mini
 
 RESEND_API_KEY=your_resend_key
-RESEND_FROM_EMAIL=Tech Webbed Chat <onboarding@resend.dev>
+RESEND_FROM_EMAIL=Tech Webbed <support@techwebbed.com>
 LEAD_NOTIFICATION_EMAIL=official.techwebbed@gmail.com
 ```
 
@@ -133,7 +133,7 @@ OPENAI_API_KEY=your_openai_key
 OPENAI_MODEL=gpt-5-mini
 
 RESEND_API_KEY=your_resend_key
-RESEND_FROM_EMAIL=Tech Webbed Chat <onboarding@resend.dev>
+RESEND_FROM_EMAIL=Tech Webbed <support@techwebbed.com>
 LEAD_NOTIFICATION_EMAIL=official.techwebbed@gmail.com
 ```
 

@@ -85,7 +85,24 @@ function ChatbotWidget() {
   const activeRequestRef = useRef(null);
   const inactivityTimerRef = useRef(null);
   const endChatInProgressRef = useRef(false);
+  const latestChatStateRef = useRef({
+    leadId: null,
+    leadDetails: { name: '', phone: '' },
+    messages: [],
+    isSending: false,
+    isEnded: false,
+  });
   const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    latestChatStateRef.current = {
+      leadId,
+      leadDetails,
+      messages,
+      isSending,
+      isEnded,
+    };
+  }, [leadId, leadDetails, messages, isSending, isEnded]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -96,7 +113,6 @@ function ChatbotWidget() {
 
     const lastMessage = messages[messages.length - 1];
     const canAutoEnd =
-      isOpen &&
       !isSending &&
       !isEnded &&
       onboardingStep === 'ready' &&
@@ -115,7 +131,7 @@ function ChatbotWidget() {
     }, INACTIVITY_TIMEOUT_MS);
 
     return clearInactivityTimer;
-  }, [messages, isOpen, isSending, isEnded, onboardingStep, leadDetails.name, leadDetails.phone]);
+  }, [messages, isSending, isEnded, onboardingStep, leadDetails.name, leadDetails.phone]);
 
   useEffect(() => clearInactivityTimer, []);
 
@@ -287,8 +303,16 @@ function ChatbotWidget() {
     sendMessage();
   }
 
-  async function endChat({ automatic = false } = {}) {
-    if (isSending || isEnded || endChatInProgressRef.current) {
+  async function endChat(options = {}) {
+    const automatic = options?.automatic === true;
+    const currentChatState = latestChatStateRef.current;
+
+    if (
+      currentChatState.isSending ||
+      currentChatState.isEnded ||
+      activeRequestRef.current ||
+      endChatInProgressRef.current
+    ) {
       return;
     }
 
@@ -308,11 +332,12 @@ function ChatbotWidget() {
     try {
       const data = await postChat({
         action: 'end_chat',
-        lead_id: leadId,
-        name: leadDetails.name,
-        phone: leadDetails.phone,
-        conversation: messages,
+        lead_id: currentChatState.leadId,
+        name: currentChatState.leadDetails.name,
+        phone: currentChatState.leadDetails.phone,
+        conversation: currentChatState.messages,
       });
+      console.log('[Tech Webbed Chat] end chat result', data);
 
       setIsEnded(true);
       setMessages((currentMessages) =>
