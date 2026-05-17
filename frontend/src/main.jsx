@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
-const API_URL = import.meta.env.VITE_API_URL;
-const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
+const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const CHAT_ENDPOINT = `${API_URL}/chat/`;
+const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000;
 console.log("API URL:", import.meta.env.VITE_API_URL);
 
 function createMessage(role, text) {
@@ -85,6 +86,7 @@ function ChatbotWidget() {
   const activeRequestRef = useRef(null);
   const inactivityTimerRef = useRef(null);
   const endChatInProgressRef = useRef(false);
+  const exitEndAttemptedRef = useRef(false);
   const latestChatStateRef = useRef({
     leadId: null,
     leadDetails: { name: '', phone: '' },
@@ -107,6 +109,18 @@ function ChatbotWidget() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages]);
+
+  useEffect(() => {
+    function handlePageHide() {
+      sendExitEndChat();
+    }
+
+    window.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, []);
 
   useEffect(() => {
     clearInactivityTimer();
@@ -154,14 +168,68 @@ function ChatbotWidget() {
   }
 
   function addMessage(role, text) {
-    setMessages((currentMessages) => [
-      ...currentMessages,
-      {
-        id: crypto.randomUUID(),
-        role,
-        text,
+    const message = createMessage(role, text);
+
+    setMessages((currentMessages) => {
+      const nextMessages = [...currentMessages, message];
+      latestChatStateRef.current = {
+        ...latestChatStateRef.current,
+        messages: nextMessages,
+      };
+      return nextMessages;
+    });
+  }
+
+  function buildEndChatPayload(currentChatState) {
+    return {
+      action: 'end_chat',
+      lead_id: currentChatState.leadId,
+      name: currentChatState.leadDetails.name,
+      phone: currentChatState.leadDetails.phone,
+      conversation: currentChatState.messages,
+    };
+  }
+
+  function shouldSendExitEndChat(currentChatState) {
+    const hasLeadContact = currentChatState.leadDetails.name && currentChatState.leadDetails.phone;
+    const hasConversation = currentChatState.messages.some(
+      (message) => message.role !== 'status' && message.text?.trim()
+    );
+
+    return (
+      hasLeadContact &&
+      hasConversation &&
+      !currentChatState.isEnded &&
+      !endChatInProgressRef.current &&
+      !exitEndAttemptedRef.current
+    );
+  }
+
+  function sendExitEndChat() {
+    const currentChatState = latestChatStateRef.current;
+
+    if (!shouldSendExitEndChat(currentChatState)) {
+      return;
+    }
+
+    exitEndAttemptedRef.current = true;
+    clearInactivityTimer();
+
+    const body = JSON.stringify(buildEndChatPayload(currentChatState));
+    const beaconBody = new Blob([body], { type: 'text/plain;charset=UTF-8' });
+
+    if (navigator.sendBeacon?.(CHAT_ENDPOINT, beaconBody)) {
+      return;
+    }
+
+    fetch(CHAT_ENDPOINT, {
+      method: 'POST',
+      body,
+      headers: {
+        'Content-Type': 'text/plain;charset=UTF-8',
       },
-    ]);
+      keepalive: true,
+    }).catch(() => {});
   }
 
   async function postChat(payload) {
@@ -169,7 +237,7 @@ function ChatbotWidget() {
     const requestId = requestCounterRef.current;
     console.log('[Tech Webbed Chat] fetch starts', requestId, payload);
 
-    const response = await fetch(`${API_URL}/chat/`, {
+    const response = await fetch(CHAT_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -218,7 +286,12 @@ function ChatbotWidget() {
         return;
       }
 
-      setLeadDetails((currentDetails) => ({ ...currentDetails, name }));
+      const nextLeadDetails = { ...leadDetails, name };
+      setLeadDetails(nextLeadDetails);
+      latestChatStateRef.current = {
+        ...latestChatStateRef.current,
+        leadDetails: nextLeadDetails,
+      };
       setOnboardingStep('phone');
       addMessage('bot', `Thanks, ${name}. May I know your WhatsApp number for better assistance?`);
       return;
@@ -232,7 +305,12 @@ function ChatbotWidget() {
         return;
       }
 
-      setLeadDetails((currentDetails) => ({ ...currentDetails, phone }));
+      const nextLeadDetails = { ...leadDetails, phone };
+      setLeadDetails(nextLeadDetails);
+      latestChatStateRef.current = {
+        ...latestChatStateRef.current,
+        leadDetails: nextLeadDetails,
+      };
       setOnboardingStep('ready');
       addMessage('bot', 'Thanks. How can I help you today?');
       return;
@@ -331,11 +409,7 @@ function ChatbotWidget() {
 
     try {
       const data = await postChat({
-        action: 'end_chat',
-        lead_id: currentChatState.leadId,
-        name: currentChatState.leadDetails.name,
-        phone: currentChatState.leadDetails.phone,
-        conversation: currentChatState.messages,
+        ...buildEndChatPayload(currentChatState),
       });
       console.log('[Tech Webbed Chat] end chat result', data);
 
