@@ -525,11 +525,26 @@ function ChatbotWidget() {
   return (
     <div className="tw-chatbot" aria-live="polite">
       {!isOpen && (
-        <button className="tw-chatbot__launcher" type="button" aria-label="Open Tech Webbed chat" onClick={openChat}>
-          <span className="tw-chatbot__launcher-icon" aria-hidden="true">
-            TW
+        <div className="tw-chatbot__launcher-wrap">
+          <span className="tw-chatbot__launcher-label" aria-hidden="true">
+            AI Assistant
           </span>
-        </button>
+          <button className="tw-chatbot__launcher" type="button" aria-label="Open Tech Webbed chat" onClick={openChat}>
+            <span className="tw-chatbot__launcher-icon" aria-hidden="true">
+              <svg className="tw-chatbot__launcher-svg" viewBox="0 0 32 32" focusable="false">
+                <path
+                  className="tw-chatbot__launcher-chat"
+                  d="M9.8 7.5h12.4c3 0 5.3 2.2 5.3 5.1v6.1c0 2.9-2.3 5.1-5.3 5.1h-4.5l-4.2 3.1c-.7.5-1.7 0-1.7-.9v-2.2h-2c-3 0-5.3-2.2-5.3-5.1v-6.1c0-2.9 2.3-5.1 5.3-5.1Z"
+                />
+                <path
+                  className="tw-chatbot__launcher-spark"
+                  d="M21.5 3.5 22.7 6l2.6 1.2-2.6 1.2-1.2 2.6-1.2-2.6-2.6-1.2L20.3 6l1.2-2.5ZM11.2 12.7l.8 1.8 1.8.8-1.8.8-.8 1.8-.8-1.8-1.8-.8 1.8-.8.8-1.8Z"
+                />
+                <path className="tw-chatbot__launcher-face" d="M14 17.1h4.2M12.1 14.3h.1M20.1 14.3h.1" />
+              </svg>
+            </span>
+          </button>
+        </div>
       )}
 
       {isOpen && (

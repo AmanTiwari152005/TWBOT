@@ -2,6 +2,7 @@
   --tw-primary: #19a7ff;
   --tw-primary-soft: #0ea5ff;
   --tw-orange: #ff7a18;
+  --tw-gold: #ffc857;
   --tw-navy: #0f172a;
   --tw-surface-dark: #111827;
   --tw-surface: #ffffff;
@@ -9,7 +10,13 @@
   --tw-border: rgba(148, 163, 184, 0.22);
   --tw-bg-soft: #f8fafc;
   --tw-text: #111827;
-  --tw-brand-gradient: linear-gradient(135deg, var(--tw-primary) 0%, var(--tw-primary-soft) 48%, var(--tw-orange) 100%);
+  --tw-brand-gradient: linear-gradient(
+    135deg,
+    var(--tw-primary) 0%,
+    var(--tw-primary-soft) 44%,
+    var(--tw-gold) 72%,
+    var(--tw-orange) 100%
+  );
   --tw-brand-glow: 0 0 28px rgba(25, 167, 255, 0.26), 0 0 22px rgba(255, 122, 24, 0.16);
   --tw-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
 }
@@ -36,6 +43,32 @@ body {
   color: var(--tw-text);
 }
 
+.tw-chatbot__launcher-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tw-chatbot__launcher-label {
+  min-height: 36px;
+  padding: 9px 14px;
+  border: 1px solid rgba(25, 167, 255, 0.16);
+  border-radius: 999px;
+  color: var(--tw-navy);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16), 0 0 18px rgba(25, 167, 255, 0.1);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 1;
+  transform: translateX(0);
+  animation: tw-label-settle 520ms ease both, tw-label-rest 680ms ease 6s forwards;
+  backdrop-filter: blur(10px);
+}
+
 .tw-chatbot__launcher {
   width: 60px;
   height: 60px;
@@ -47,7 +80,37 @@ body {
   cursor: pointer;
   display: grid;
   place-items: center;
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
   transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+.tw-chatbot__launcher::before {
+  position: absolute;
+  inset: 7px;
+  border-radius: inherit;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.06));
+  content: "";
+  z-index: 0;
+}
+
+.tw-chatbot__launcher::after {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 120deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(255, 200, 87, 0.15),
+    rgba(25, 167, 255, 0.36),
+    rgba(255, 122, 24, 0.28),
+    rgba(255, 255, 255, 0.5)
+  );
+  content: "";
+  opacity: 0;
+  transition: opacity 180ms ease;
+  z-index: 0;
 }
 
 .tw-chatbot__launcher:hover {
@@ -57,17 +120,53 @@ body {
     0 0 24px rgba(255, 122, 24, 0.18);
 }
 
+.tw-chatbot__launcher:hover::after,
+.tw-chatbot__launcher:focus-visible::after {
+  opacity: 1;
+}
+
+.tw-chatbot__launcher-wrap:hover .tw-chatbot__launcher-label,
+.tw-chatbot__launcher-wrap:focus-within .tw-chatbot__launcher-label {
+  opacity: 1;
+  transform: translateX(0);
+  animation: none;
+}
+
 .tw-chatbot__launcher-icon {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: rgba(15, 23, 42, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0;
+  background: rgba(15, 23, 42, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24), 0 6px 16px rgba(15, 23, 42, 0.16);
+  position: relative;
+  z-index: 1;
+}
+
+.tw-chatbot__launcher-svg {
+  width: 31px;
+  height: 31px;
+  display: block;
+  overflow: visible;
+}
+
+.tw-chatbot__launcher-chat {
+  fill: rgba(255, 255, 255, 0.94);
+}
+
+.tw-chatbot__launcher-spark {
+  fill: var(--tw-gold);
+  filter: drop-shadow(0 0 5px rgba(255, 200, 87, 0.45));
+  transform-origin: center;
+  animation: tw-spark-pulse 2.8s ease-in-out infinite;
+}
+
+.tw-chatbot__launcher-face {
+  fill: none;
+  stroke: var(--tw-navy);
+  stroke-linecap: round;
+  stroke-width: 2.2;
 }
 
 .tw-chatbot__panel {
@@ -262,5 +361,43 @@ body {
   .tw-chatbot__panel {
     width: calc(100vw - 28px);
     height: calc(100vh - 28px);
+  }
+
+  .tw-chatbot__launcher-wrap {
+    gap: 9px;
+  }
+
+  .tw-chatbot__launcher-label {
+    max-width: calc(100vw - 98px);
+    min-height: 34px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+@keyframes tw-label-settle {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+}
+
+@keyframes tw-label-rest {
+  to {
+    opacity: 0.72;
+    transform: translateX(4px);
+  }
+}
+
+@keyframes tw-spark-pulse {
+  0%,
+  100% {
+    opacity: 0.78;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
   }
 }
