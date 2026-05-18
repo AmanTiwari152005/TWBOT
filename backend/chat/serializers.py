@@ -2,13 +2,15 @@ from rest_framework import serializers
 
 
 class ChatRequestSerializer(serializers.Serializer):
-    action = serializers.ChoiceField(choices=['message', 'end_chat'], default='message')
+    action = serializers.ChoiceField(choices=['message', 'capture_lead', 'end_chat'], default='message')
     lead_id = serializers.IntegerField(required=False, allow_null=True)
+    session_id = serializers.CharField(max_length=80, required=False, allow_blank=True)
     name = serializers.CharField(max_length=120, required=False, allow_blank=True)
     phone = serializers.CharField(max_length=40, required=False, allow_blank=True)
     business_type = serializers.CharField(max_length=160, required=False, allow_blank=True)
     message = serializers.CharField(required=False, allow_blank=True)
     conversation = serializers.ListField(required=False, child=serializers.DictField(), allow_empty=True)
+    trigger = serializers.CharField(max_length=40, required=False, allow_blank=True)
 
     def validate(self, attrs):
         action = attrs.get('action', 'message')

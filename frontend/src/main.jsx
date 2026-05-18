@@ -4,6 +4,7 @@ import './styles.css';
 
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 const CHAT_ENDPOINT = `${API_URL}/chat/`;
+const CHAT_SESSION_STORAGE_KEY = 'tech-webbed-chat-session-id';
 const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000;
 console.log("API URL:", import.meta.env.VITE_API_URL);
 
@@ -13,6 +14,22 @@ function createMessage(role, text) {
     role,
     text,
   };
+}
+
+function getChatSessionId() {
+  try {
+    const existingSessionId = window.sessionStorage.getItem(CHAT_SESSION_STORAGE_KEY);
+
+    if (existingSessionId) {
+      return existingSessionId;
+    }
+
+    const newSessionId = crypto.randomUUID();
+    window.sessionStorage.setItem(CHAT_SESSION_STORAGE_KEY, newSessionId);
+    return newSessionId;
+  } catch (error) {
+    return crypto.randomUUID();
+  }
 }
 
 function extractName(value) {
@@ -82,8 +99,10 @@ function ChatbotWidget() {
   const [messages, setMessages] = useState([]);
   const [isSending, setIsSending] = useState(false);
   const [isEnded, setIsEnded] = useState(false);
+  const sessionIdRef = useRef(getChatSessionId());
   const requestCounterRef = useRef(0);
   const activeRequestRef = useRef(null);
+  const leadCaptureRequestRef = useRef(null);
   const inactivityTimerRef = useRef(null);
   const endChatInProgressRef = useRef(false);
   const exitEndAttemptedRef = useRef(false);
@@ -111,14 +130,28 @@ function ChatbotWidget() {
   }, [messages]);
 
   useEffect(() => {
-    function handlePageHide() {
-      sendExitEndChat();
+    function handleBeforeUnload() {
+      sendExitEndChat('beforeunload');
     }
 
+    function handlePageHide() {
+      sendExitEndChat('pagehide');
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        sendExitEndChat('visibilitychange');
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('pagehide', handlePageHide);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('pagehide', handlePageHide);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -140,7 +173,7 @@ function ChatbotWidget() {
 
     console.log('[Tech Webbed Chat] inactivity timer started');
     inactivityTimerRef.current = window.setTimeout(() => {
-      console.log('[Tech Webbed Chat] inactivity timer expired');
+      console.log('[Tech Webbed Chat] inactivity trigger fired');
       endChat({ automatic: true });
     }, INACTIVITY_TIMEOUT_MS);
 
@@ -162,7 +195,7 @@ function ChatbotWidget() {
     if (!hasOpened) {
       setHasOpened(true);
       setMessages([
-        createMessage('bot', 'Hi I am Tech Webbed AI Assistance.'),
+        createMessage('bot', 'Hi, I am the Tech Webbed AI Assistant.'),
       ]);
     }
   }
@@ -183,6 +216,7 @@ function ChatbotWidget() {
   function buildEndChatPayload(currentChatState) {
     return {
       action: 'end_chat',
+      session_id: sessionIdRef.current,
       lead_id: currentChatState.leadId,
       name: currentChatState.leadDetails.name,
       phone: currentChatState.leadDetails.phone,
@@ -205,23 +239,34 @@ function ChatbotWidget() {
     );
   }
 
-  function sendExitEndChat() {
+  function sendExitEndChat(trigger) {
     const currentChatState = latestChatStateRef.current;
 
     if (!shouldSendExitEndChat(currentChatState)) {
       return;
     }
 
+    console.log('[Tech Webbed Chat] unload trigger fired', trigger);
     exitEndAttemptedRef.current = true;
+    latestChatStateRef.current = {
+      ...currentChatState,
+      isEnded: true,
+    };
+    setIsEnded(true);
     clearInactivityTimer();
 
-    const body = JSON.stringify(buildEndChatPayload(currentChatState));
+    const body = JSON.stringify({
+      ...buildEndChatPayload(currentChatState),
+      trigger,
+    });
     const beaconBody = new Blob([body], { type: 'text/plain;charset=UTF-8' });
 
     if (navigator.sendBeacon?.(CHAT_ENDPOINT, beaconBody)) {
+      console.log('[Tech Webbed Chat] unload beacon queued', trigger);
       return;
     }
 
+    console.log('[Tech Webbed Chat] unload keepalive fetch queued', trigger);
     fetch(CHAT_ENDPOINT, {
       method: 'POST',
       body,
@@ -235,7 +280,7 @@ function ChatbotWidget() {
   async function postChat(payload) {
     requestCounterRef.current += 1;
     const requestId = requestCounterRef.current;
-    console.log('[Tech Webbed Chat] fetch starts', requestId, payload);
+    console.log('[Tech Webbed Chat] fetch starts', requestId, payload.action || 'message');
 
     const response = await fetch(CHAT_ENDPOINT, {
       method: 'POST',
@@ -253,6 +298,37 @@ function ChatbotWidget() {
     }
 
     return response.json();
+  }
+
+  async function captureLead(details) {
+    if (!details.name || !details.phone || leadCaptureRequestRef.current) {
+      return;
+    }
+
+    console.log('[Tech Webbed Chat] lead capture request starts');
+
+    try {
+      const request = postChat({
+        action: 'capture_lead',
+        session_id: sessionIdRef.current,
+        lead_id: leadId,
+        name: details.name,
+        phone: details.phone,
+      });
+      leadCaptureRequestRef.current = request;
+
+      const data = await request;
+      setLeadId(data.lead_id);
+      latestChatStateRef.current = {
+        ...latestChatStateRef.current,
+        leadId: data.lead_id,
+      };
+      console.log('[Tech Webbed Chat] lead capture saved');
+    } catch (error) {
+      console.warn('[Tech Webbed Chat] lead capture failed', error.message || error);
+    } finally {
+      leadCaptureRequestRef.current = null;
+    }
   }
 
   async function sendMessage() {
@@ -313,6 +389,7 @@ function ChatbotWidget() {
       };
       setOnboardingStep('ready');
       addMessage('bot', 'Thanks. How can I help you today?');
+      captureLead(nextLeadDetails);
       return;
     }
 
@@ -331,6 +408,7 @@ function ChatbotWidget() {
     try {
       activeRequestRef.current = postChat({
         action: 'message',
+        session_id: sessionIdRef.current,
         lead_id: leadId,
         name: leadDetails.name,
         phone: leadDetails.phone,
@@ -383,6 +461,7 @@ function ChatbotWidget() {
 
   async function endChat(options = {}) {
     const automatic = options?.automatic === true;
+    const trigger = automatic ? 'inactivity' : 'button';
     const currentChatState = latestChatStateRef.current;
 
     if (
@@ -395,6 +474,7 @@ function ChatbotWidget() {
     }
 
     clearInactivityTimer();
+    console.log('[Tech Webbed Chat] end chat trigger fired', trigger);
     endChatInProgressRef.current = true;
     setIsSending(true);
     const statusId = crypto.randomUUID();
@@ -410,6 +490,7 @@ function ChatbotWidget() {
     try {
       const data = await postChat({
         ...buildEndChatPayload(currentChatState),
+        trigger,
       });
       console.log('[Tech Webbed Chat] end chat result', data);
 
@@ -453,8 +534,8 @@ function ChatbotWidget() {
         <section className="tw-chatbot__panel" aria-label="Tech Webbed chatbot">
           <header className="tw-chatbot__header">
             <div>
-              <p className="tw-chatbot__eyebrow">Tech Webbed</p>
-              <h1>Business Support</h1>
+              <p className="tw-chatbot__eyebrow">AI Chatbot</p>
+              <h1>Tech Webbed AI Assistant</h1>
             </div>
             <button className="tw-chatbot__close" type="button" aria-label="Close chat" onClick={() => setIsOpen(false)}>
               x

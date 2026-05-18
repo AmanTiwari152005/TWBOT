@@ -75,6 +75,12 @@ POST /chat/
 
 When the frontend sends `action: "end_chat"`, the backend generates a PDF transcript and emails it to `LEAD_NOTIFICATION_EMAIL` using Resend.
 
+The frontend also sends best-effort end-chat requests on tab close, refresh, page hide, and browser/mobile backgrounding. For hard process kills where the browser cannot send any final request, run the backend stale-session command from a scheduler:
+
+```bash
+python manage.py send_abandoned_chat_emails --minutes 3
+```
+
 ## Local Frontend Setup
 
 ```bash
@@ -225,4 +231,3 @@ Frontend:
 - `frontend/.env.example`
 - `frontend/package.json`
 - `frontend/vite.config.js`
-

@@ -5,9 +5,9 @@ from .models import ChatMessage, UserLead
 
 @admin.register(UserLead)
 class UserLeadAdmin(admin.ModelAdmin):
-    list_display = ('name', 'business_type', 'created_at')
-    search_fields = ('name', 'business_type')
-    readonly_fields = ('created_at',)
+    list_display = ('name', 'phone', 'business_type', 'lead_completed', 'email_sent', 'last_activity', 'created_at')
+    search_fields = ('name', 'phone', 'business_type', 'session_id')
+    readonly_fields = ('created_at', 'last_activity', 'email_sent_at', 'lead_notification_sent_at')
 
 
 @admin.register(ChatMessage)

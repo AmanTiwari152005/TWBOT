@@ -275,6 +275,31 @@ def send_chat_transcript_email(lead, frontend_conversation=None):
         ],
     }
     resend.Emails.send(params)
+    logger.info('Chat transcript email sent for lead_id=%s.', lead.id)
+    return True
+
+
+def send_lead_capture_email(lead):
+    if not settings.RESEND_API_KEY or not settings.LEAD_NOTIFICATION_EMAIL:
+        logger.warning('Lead capture email skipped because RESEND_API_KEY or LEAD_NOTIFICATION_EMAIL is missing.')
+        return False
+
+    resend.api_key = settings.RESEND_API_KEY
+    params = {
+        'from': settings.RESEND_FROM_EMAIL,
+        'to': [settings.LEAD_NOTIFICATION_EMAIL],
+        'subject': f'New Tech Webbed chatbot lead - {lead.name}',
+        'html': (
+            '<p>A new chatbot lead was captured.</p>'
+            f'<p><strong>Lead:</strong> {lead.name}<br />'
+            f'<strong>WhatsApp number:</strong> {lead.phone or "Not provided"}<br />'
+            f'<strong>Business type:</strong> {lead.business_type}<br />'
+            f'<strong>Lead ID:</strong> {lead.id}</p>'
+            '<p>The final chat transcript will be sent when the chat ends.</p>'
+        ),
+    }
+    resend.Emails.send(params)
+    logger.info('Lead capture email sent for lead_id=%s.', lead.id)
     return True
 
 
