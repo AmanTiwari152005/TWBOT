@@ -26,11 +26,12 @@ class ChatAPIView(APIView):
         lead = self.get_or_create_lead(data)
 
         if data.get('action') == 'capture_lead':
-            self.maybe_send_lead_capture_email(lead)
+            lead_notification_sent = self.maybe_send_lead_capture_email(lead)
             return Response(
                 {
                     'lead_id': lead.id,
                     'lead_completed': lead.lead_completed,
+                    'lead_notification_sent': lead_notification_sent,
                 },
                 status=status.HTTP_200_OK,
             )

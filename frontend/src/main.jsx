@@ -328,7 +328,9 @@ function ChatbotWidget() {
         ...latestChatStateRef.current,
         leadId: data.lead_id,
       };
-      console.log('[Tech Webbed Chat] lead capture saved');
+      console.log('[Tech Webbed Chat] lead capture saved', {
+        leadNotificationSent: Boolean(data.lead_notification_sent),
+      });
     } catch (error) {
       console.warn('[Tech Webbed Chat] lead capture failed', error.message || error);
     } finally {
