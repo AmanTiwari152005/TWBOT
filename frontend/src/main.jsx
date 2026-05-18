@@ -134,13 +134,18 @@ function ChatbotWidget() {
       sendExitEndChat('beforeunload');
     }
 
-    function handlePageHide() {
+    function handlePageHide(event) {
+      if (event.persisted) {
+        console.log('[Tech Webbed Chat] pagehide ignored for bfcache');
+        return;
+      }
+
       sendExitEndChat('pagehide');
     }
 
     function handleVisibilityChange() {
       if (document.visibilityState === 'hidden') {
-        sendExitEndChat('visibilitychange');
+        console.log('[Tech Webbed Chat] visibility hidden');
       }
     }
 
