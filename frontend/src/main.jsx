@@ -229,6 +229,27 @@ function ChatbotWidget() {
     };
   }
 
+  function sendBeaconPayload(payload, trigger) {
+    const body = JSON.stringify(payload);
+    const beaconBody = new Blob([body], { type: 'text/plain;charset=UTF-8' });
+
+    if (navigator.sendBeacon?.(CHAT_ENDPOINT, beaconBody)) {
+      console.log('[Tech Webbed Chat] beacon queued', trigger);
+      return true;
+    }
+
+    fetch(CHAT_ENDPOINT, {
+      method: 'POST',
+      body,
+      headers: {
+        'Content-Type': 'text/plain;charset=UTF-8',
+      },
+      keepalive: true,
+    }).catch(() => {});
+    console.log('[Tech Webbed Chat] keepalive fetch queued', trigger);
+    return true;
+  }
+
   function shouldSendExitEndChat(currentChatState) {
     const hasLeadContact = currentChatState.leadDetails.name && currentChatState.leadDetails.phone;
     const hasConversation = currentChatState.messages.some(
@@ -260,26 +281,10 @@ function ChatbotWidget() {
     setIsEnded(true);
     clearInactivityTimer();
 
-    const body = JSON.stringify({
+    sendBeaconPayload({
       ...buildEndChatPayload(currentChatState),
       trigger,
-    });
-    const beaconBody = new Blob([body], { type: 'text/plain;charset=UTF-8' });
-
-    if (navigator.sendBeacon?.(CHAT_ENDPOINT, beaconBody)) {
-      console.log('[Tech Webbed Chat] unload beacon queued', trigger);
-      return;
-    }
-
-    console.log('[Tech Webbed Chat] unload keepalive fetch queued', trigger);
-    fetch(CHAT_ENDPOINT, {
-      method: 'POST',
-      body,
-      headers: {
-        'Content-Type': 'text/plain;charset=UTF-8',
-      },
-      keepalive: true,
-    }).catch(() => {});
+    }, trigger);
   }
 
   async function postChat(payload) {
@@ -312,14 +317,16 @@ function ChatbotWidget() {
 
     console.log('[Tech Webbed Chat] lead capture request starts');
 
+    const payload = {
+      action: 'capture_lead',
+      session_id: sessionIdRef.current,
+      lead_id: leadId,
+      name: details.name,
+      phone: details.phone,
+    };
+
     try {
-      const request = postChat({
-        action: 'capture_lead',
-        session_id: sessionIdRef.current,
-        lead_id: leadId,
-        name: details.name,
-        phone: details.phone,
-      });
+      const request = postChat(payload);
       leadCaptureRequestRef.current = request;
 
       const data = await request;
@@ -333,6 +340,7 @@ function ChatbotWidget() {
       });
     } catch (error) {
       console.warn('[Tech Webbed Chat] lead capture failed', error.message || error);
+      sendBeaconPayload(payload, 'capture_lead_fallback');
     } finally {
       leadCaptureRequestRef.current = null;
     }
