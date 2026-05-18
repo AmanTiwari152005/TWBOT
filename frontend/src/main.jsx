@@ -4,7 +4,6 @@ import './styles.css';
 
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 const CHAT_ENDPOINT = `${API_URL}/chat/`;
-const CHAT_SESSION_STORAGE_KEY = 'tech-webbed-chat-session-id';
 const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000;
 console.log("API URL:", import.meta.env.VITE_API_URL);
 
@@ -17,19 +16,7 @@ function createMessage(role, text) {
 }
 
 function getChatSessionId() {
-  try {
-    const existingSessionId = window.sessionStorage.getItem(CHAT_SESSION_STORAGE_KEY);
-
-    if (existingSessionId) {
-      return existingSessionId;
-    }
-
-    const newSessionId = crypto.randomUUID();
-    window.sessionStorage.setItem(CHAT_SESSION_STORAGE_KEY, newSessionId);
-    return newSessionId;
-  } catch (error) {
-    return crypto.randomUUID();
-  }
+  return crypto.randomUUID();
 }
 
 function extractName(value) {
