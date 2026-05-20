@@ -14,7 +14,7 @@ def normalize_phone_number(value):
 
     digits = digits.lstrip('0')
 
-    if len(digits) != 10 or digits.startswith('0'):
+    if len(digits) != 10 or digits[0] not in '6789':
         return ''
 
     return digits

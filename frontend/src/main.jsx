@@ -79,7 +79,7 @@ function normalizePhoneNumber(value) {
 
   digits = digits.replace(/^0+/, '');
 
-  if (digits.length !== 10 || digits.startsWith('0')) {
+  if (digits.length !== 10 || !/^[6-9]/.test(digits)) {
     return '';
   }
 
