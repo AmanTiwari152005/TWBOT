@@ -67,13 +67,23 @@ function extractName(value) {
 
 function normalizePhoneNumber(value) {
   const trimmed = value.trim();
-  const digits = trimmed.replace(/\D/g, '');
+  let digits = trimmed.replace(/\D/g, '');
 
-  if (!/^\+?[\d\s().-]+$/.test(trimmed) || digits.length < 10 || digits.length > 15) {
+  if (!/^\+?[\d\s().-]+$/.test(trimmed)) {
     return '';
   }
 
-  return trimmed.startsWith('+') ? `+${digits}` : digits;
+  if (digits.startsWith('91') && digits.length === 12) {
+    digits = digits.slice(2);
+  }
+
+  digits = digits.replace(/^0+/, '');
+
+  if (digits.length !== 10 || digits.startsWith('0')) {
+    return '';
+  }
+
+  return digits;
 }
 
 function ChatbotWidget() {
